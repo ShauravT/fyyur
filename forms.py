@@ -1,7 +1,8 @@
 from datetime import datetime
 from flask_wtf import Form
-from wtforms import StringField, SelectField, SelectMultipleField, DateTimeField
-from wtforms.validators import DataRequired, AnyOf, URL
+from wtforms import StringField, SelectField, SelectMultipleField, DateTimeField, ValidationError
+from wtforms.validators import DataRequired, AnyOf, URL, Optional
+import phonenumbers as pn
 
 class ShowForm(Form):
     artist_id = StringField(
@@ -83,10 +84,23 @@ class VenueForm(Form):
         'address', validators=[DataRequired()]
     )
     phone = StringField(
-        'phone'
+        'phone', validators=[DataRequired()]
     )
     image_link = StringField(
-        'image_link'
+        'image_link', validators=[Optional(),URL()]
+    )
+    website= StringField(
+        'website', validators=[Optional(),URL()]
+    )
+    seeking_talent = SelectField(
+        'seeking_talent', validators=[DataRequired()],
+        choices=[
+            ('No','No'),
+            ('Yes','Yes')
+        ]
+    )
+    seeking_description= StringField(
+        'seeking_description', validators=[Optional()]
     )
     genres = SelectMultipleField(
         # TODO implement enum restriction
@@ -182,10 +196,10 @@ class ArtistForm(Form):
     )
     phone = StringField(
         # TODO implement validation logic for state
-        'phone'
+        'phone', validators=[DataRequired()]
     )
     image_link = StringField(
-        'image_link'
+        'image_link', validators=[Optional(), URL()]
     )
     genres = SelectMultipleField(
         # TODO implement enum restriction
@@ -216,5 +230,13 @@ class ArtistForm(Form):
         # TODO implement enum restriction
         'facebook_link', validators=[URL()]
     )
-
-# TODO IMPLEMENT NEW ARTIST FORM AND NEW SHOW FORM
+    seeking_venue = SelectField(
+        'seeking_venue', validators=[DataRequired()],
+        choices=[
+            ('No','No'),
+            ('Yes','Yes')
+        ]
+    )
+    seeking_description= StringField(
+        'seeking_description', validators=[Optional()]
+    )
