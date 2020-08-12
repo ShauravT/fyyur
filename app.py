@@ -5,7 +5,7 @@
 import json
 import dateutil.parser
 import babel
-from flask import Flask, render_template, request, Response, flash, redirect, url_for
+from flask import Flask, render_template, request, Response, flash, redirect, url_for, abort
 from flask_moment import Moment
 from flask_sqlalchemy import SQLAlchemy
 import logging
@@ -14,6 +14,8 @@ from flask_wtf import Form
 from forms import *
 from flask_migrate import Migrate
 from datetime import datetime
+import re
+from operator import itemgetter
 #----------------------------------------------------------------------------#
 # App Config.
 #----------------------------------------------------------------------------#
@@ -40,7 +42,7 @@ class Venue(db.Model):
     phone = db.Column(db.String(120))
     image_link = db.Column(db.String(500))
     facebook_link = db.Column(db.String(120))
-
+    genres = db.Column(db.String(120))
     # TODO: implement any missing fields, as a database migration using Flask-Migrate
     website = db.Column(db.String(120))
     seeking_talent = db.Column(db.Boolean, default=False)
@@ -143,10 +145,10 @@ def venues():
           "num_upcoming_shows": num_upcoming_shows
         })
 
-  data.append({
-    "city": location[0],
-    "state": location[1],
-    "venues": venue_list
+      data.append({
+        "city": location[0],
+        "state": location[1],
+        "venues": venue_list
   })
   print(data)
   # data=[{
@@ -293,6 +295,7 @@ def create_venue_submission():
   image_link = form.image_link.data.strip()
   facebook_link = form.facebook_link.data.strip()
   website = form.website.data.strip()
+  genres = form.genres.data
   seeking_talent = True if(form.seeking_talent =='Yes') else False
   seeking_description = form.seeking_description.data.strip()
 
@@ -324,7 +327,7 @@ def create_venue_submission():
       return render_template('pages/home.html')
     else:
       # TODO: on unsuccessful db insert, flash an error instead.
-      flash('An error occurred. Venue ' + data.name + ' could not be listed.')
+      flash('An error occurred. Venue ' + request.form['name'] +  ' could not be listed.')
       # see: http://flask.pocoo.org/docs/1.0/patterns/flashing/
       print("Error in create_venue_submission()")
       # internal server error
@@ -345,16 +348,24 @@ def delete_venue(venue_id):
 @app.route('/artists')
 def artists():
   # TODO: replace with real data returned from querying the database
-  data=[{
-    "id": 4,
-    "name": "Guns N Petals",
-  }, {
-    "id": 5,
-    "name": "Matt Quevedo",
-  }, {
-    "id": 6,
-    "name": "The Wild Sax Band",
-  }]
+  artists = Artist.query.order_by(Artist.name).all()
+
+  data = []
+  for artist in artists:
+    data.append({
+      "id":artist.id,
+      "name":artist.name
+    })
+  # data=[{
+  #   "id": 4,
+  #   "name": "Guns N Petals",
+  # }, {
+  #   "id": 5,
+  #   "name": "Matt Quevedo",
+  # }, {
+  #   "id": 6,
+  #   "name": "The Wild Sax Band",
+  # }]
   return render_template('pages/artists.html', artists=data)
 
 @app.route('/artists/search', methods=['POST'])
@@ -560,7 +571,7 @@ def create_artist_submission():
       return render_template('pages/home.html')
     else:
       # TODO: on unsuccessful db insert, flash an error instead.
-      flash('An error occurred. Artist ' + data.name + ' could not be listed.')
+      flash('An error occurred. Artist ' + request.form['name'] +  ' could not be listed.')
       print("Error in create_artist_submission()")
       #internal server error
       abort(500)
@@ -575,61 +586,96 @@ def shows():
   # displays list of shows at /shows
   # TODO: replace with real venues data.
   #       num_shows should be aggregated based on number of upcoming shows per venue.
-  data=[{
-    "venue_id": 1,
-    "venue_name": "The Musical Hop",
-    "artist_id": 4,
-    "artist_name": "Guns N Petals",
-    "artist_image_link": "https://images.unsplash.com/photo-1549213783-8284d0336c4f?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=300&q=80",
-    "start_time": "2019-05-21T21:30:00.000Z"
-  }, {
-    "venue_id": 3,
-    "venue_name": "Park Square Live Music & Coffee",
-    "artist_id": 5,
-    "artist_name": "Matt Quevedo",
-    "artist_image_link": "https://images.unsplash.com/photo-1495223153807-b916f75de8c5?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=334&q=80",
-    "start_time": "2019-06-15T23:00:00.000Z"
-  }, {
-    "venue_id": 3,
-    "venue_name": "Park Square Live Music & Coffee",
-    "artist_id": 6,
-    "artist_name": "The Wild Sax Band",
-    "artist_image_link": "https://images.unsplash.com/photo-1558369981-f9ca78462e61?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=794&q=80",
-    "start_time": "2035-04-01T20:00:00.000Z"
-  }, {
-    "venue_id": 3,
-    "venue_name": "Park Square Live Music & Coffee",
-    "artist_id": 6,
-    "artist_name": "The Wild Sax Band",
-    "artist_image_link": "https://images.unsplash.com/photo-1558369981-f9ca78462e61?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=794&q=80",
-    "start_time": "2035-04-08T20:00:00.000Z"
-  }, {
-    "venue_id": 3,
-    "venue_name": "Park Square Live Music & Coffee",
-    "artist_id": 6,
-    "artist_name": "The Wild Sax Band",
-    "artist_image_link": "https://images.unsplash.com/photo-1558369981-f9ca78462e61?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=794&q=80",
-    "start_time": "2035-04-15T20:00:00.000Z"
-  }]
+  data = []
+  shows = Show.query.all()
+
+  for show in shows:
+    data.append({
+      "venue_id": show.venue.id,
+      "venue_name": show.venue.name,
+      "artist_id": show.artist.id,
+      "artist_name": show.artist.name,
+      "artist_image_link": show.artist.image_link,
+      "start_time": format_datetime(str(show.start_time))
+    })
+  # data=[{
+  #   "venue_id": 1,
+  #   "venue_name": "The Musical Hop",
+  #   "artist_id": 4,
+  #   "artist_name": "Guns N Petals",
+  #   "artist_image_link": "https://images.unsplash.com/photo-1549213783-8284d0336c4f?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=300&q=80",
+  #   "start_time": "2019-05-21T21:30:00.000Z"
+  # }, {
+  #   "venue_id": 3,
+  #   "venue_name": "Park Square Live Music & Coffee",
+  #   "artist_id": 5,
+  #   "artist_name": "Matt Quevedo",
+  #   "artist_image_link": "https://images.unsplash.com/photo-1495223153807-b916f75de8c5?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=334&q=80",
+  #   "start_time": "2019-06-15T23:00:00.000Z"
+  # }, {
+  #   "venue_id": 3,
+  #   "venue_name": "Park Square Live Music & Coffee",
+  #   "artist_id": 6,
+  #   "artist_name": "The Wild Sax Band",
+  #   "artist_image_link": "https://images.unsplash.com/photo-1558369981-f9ca78462e61?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=794&q=80",
+  #   "start_time": "2035-04-01T20:00:00.000Z"
+  # }, {
+  #   "venue_id": 3,
+  #   "venue_name": "Park Square Live Music & Coffee",
+  #   "artist_id": 6,
+  #   "artist_name": "The Wild Sax Band",
+  #   "artist_image_link": "https://images.unsplash.com/photo-1558369981-f9ca78462e61?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=794&q=80",
+  #   "start_time": "2035-04-08T20:00:00.000Z"
+  # }, {
+  #   "venue_id": 3,
+  #   "venue_name": "Park Square Live Music & Coffee",
+  #   "artist_id": 6,
+  #   "artist_name": "The Wild Sax Band",
+  #   "artist_image_link": "https://images.unsplash.com/photo-1558369981-f9ca78462e61?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=794&q=80",
+  #   "start_time": "2035-04-15T20:00:00.000Z"
+  # }]
   return render_template('pages/shows.html', shows=data)
 
-@app.route('/shows/create')
+@app.route('/shows/create', methods=['GET'])
 def create_shows():
   # renders form. do not touch.
   form = ShowForm()
+  form.artist_id.choices =[(artist.id, artist.name) for artist in Artist.query.order_by(Artist.id).all()]
+  form.venue_id.choices =[(venue.id, venue.name) for venue in Venue.query.order_by(Venue.id).all()]
   return render_template('forms/new_show.html', form=form)
 
 @app.route('/shows/create', methods=['POST'])
 def create_show_submission():
   # called to create new shows in the db, upon submitting new show listing form
   # TODO: insert form data as a new Show record in the db, instead
+  form =ShowForm()
 
-  # on successful db insert, flash success
-  flash('Show was successfully listed!')
-  # TODO: on unsuccessful db insert, flash an error instead.
-  # e.g., flash('An error occurred. Show could not be listed.')
+  artist_id = form.artist_id.data.strip()
+  venue_id = form.venue_data.strip()
+  start_time = form.start_time.data
+
+  error_in_insert = False
+
+  try:
+    new_show = Show(start_time=start_time, artist_id=artist_id, venue_id=venue_id)
+    db.session.add(new_show)
+    db.session.commit()
+
+  except:
+    error_in_insert = True
+    print(f'Exception "{e}" in create_show_submission()')
+    db.session.rollback()
+
+  if not error_in_insert:
+    # on successful db insert, flash success
+    flash('Show was successfully listed!')
+    return render_template('pages/home.html')
+  else:
+    # TODO: on unsuccessful db insert, flash an error instead.
+    flash('An error occurred. Show could not be listed.')
+    print("Error in create_show_submission")
   # see: http://flask.pocoo.org/docs/1.0/patterns/flashing/
-  return render_template('pages/home.html')
+
 
 @app.errorhandler(404)
 def not_found_error(error):
