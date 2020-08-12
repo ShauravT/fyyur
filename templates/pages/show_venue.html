@@ -36,7 +36,7 @@
 				<i class="fas fa-quote-left"></i> {{ venue.seeking_description }} <i class="fas fa-quote-right"></i>
 			</div>
 		</div>
-		{% else %}	
+		{% else %}
 		<p class="not-seeking">
 			<i class="fas fa-moon"></i> Not currently seeking talent
 		</p>
@@ -72,6 +72,10 @@
 			</div>
 		</div>
 		{% endfor %}
+	</div>
+	<div class="form-wrapper">
+		<a href='/artists/{{ venue.id }}/edit'><input type="button" value="Edit" class="btn btn-primary"></a>
+		<input type="button" value="Delete" class="btn btn-warning">
 	</div>
 </section>
 
