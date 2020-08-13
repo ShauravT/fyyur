@@ -179,15 +179,37 @@ def search_venues():
   # TODO: implement search on artists with partial string search. Ensure it is case-insensitive.
   # search for Hop should return "The Musical Hop".
   # search for "Music" should return "The Musical Hop" and "Park Square Live Music & Coffee"
-  response={
-    "count": 1,
-    "data": [{
-      "id": 2,
-      "name": "The Dueling Pianos Bar",
-      "num_upcoming_shows": 0,
-    }]
+  search_term = request.form.get('search_term', '').strip()
+  search_word = '%' + search_term +'%'
+  venues = Venue.query.filter(Venue.name.ilike(search_word)).all()
+  venue_list = []
+  current_datetime = datetime.now()
+  for venue in venues:
+    venue_show = Show.query.filter_by(venue_id=venue.id).all()
+    num_upcoming_shows = 0
+    for show in venue_show:
+      if show.start_time > current_datetime:
+        num_upcoming_shows += 1
+
+    venue_list.append({
+      "id":venue.id,
+      "name":venue.name,
+      "num_upcoming_shows":num_upcoming_shows
+    })
+
+  # response={
+  #   "count": 1,
+  #   "data": [{
+  #     "id": 2,
+  #     "name": "The Dueling Pianos Bar",
+  #     "num_upcoming_shows": 0,
+  #   }]
+  # }
+  response = {
+    "count": len(venues),
+    "data": venue_list
   }
-  return render_template('pages/search_venues.html', results=response, search_term=request.form.get('search_term', ''))
+  return render_template('pages/search_venues.html', results=response, search_term=search_term)
 
 @app.route('/venues/<int:venue_id>')
 def show_venue(venue_id):
@@ -419,15 +441,36 @@ def search_artists():
   # TODO: implement search on artists with partial string search. Ensure it is case-insensitive.
   # search for "A" should return "Guns N Petals", "Matt Quevado", and "The Wild Sax Band".
   # search for "band" should return "The Wild Sax Band".
-  response={
-    "count": 1,
-    "data": [{
-      "id": 4,
-      "name": "Guns N Petals",
-      "num_upcoming_shows": 0,
-    }]
+  search_term = request.form.get('search_term', '').strip()
+  search_word = '%' + search_term +'%'
+  artists = Artist.query.filter(Artist.name.ilike(search_word)).all()
+  artist_list = []
+  current_datetime = datetime.now()
+  for artist in artists:
+    artist_show = Show.query.filter_by(artist_id=artist.id).all()
+    num_upcoming_shows = 0
+    for show in artist_show:
+      if show.start_time > current_datetime:
+        num_upcoming_shows += 1
+
+    artist_list.append({
+      "id":artist.id,
+      "name":artist.name,
+      "num_upcoming_shows":num_upcoming_shows
+    })
+    response = {
+    "count": len(artists),
+    "data": artist_list
   }
-  return render_template('pages/search_artists.html', results=response, search_term=request.form.get('search_term', ''))
+  # response={
+  #   "count": 1,
+  #   "data": [{
+  #     "id": 4,
+  #     "name": "Guns N Petals",
+  #     "num_upcoming_shows": 0,
+  #   }]
+  # }
+  return render_template('pages/search_artists.html', results=response, search_term=search_term)
 
 @app.route('/artists/<int:artist_id>')
 def show_artist(artist_id):
