@@ -6,7 +6,7 @@
 		<h1 class="monospace">
 			{{ venue.name }}
 		</h1>
-		<p class="subtitle">
+		<p class="subtitle" id="{{ venue.id }}" >
 			ID: {{ venue.id }}
 		</p>
 		<div class="genres">
@@ -73,11 +73,10 @@
 		</div>
 		{% endfor %}
 	</div>
-	<div class="form-wrapper">
-		<a href='/venues/{{ venue.id }}/edit'><input type="button" value="Edit" class="btn btn-primary"></a>
-		<input type="button" value="Delete" class="btn btn-warning">
-	</div>
 </section>
-
+<section>
+	<a href='/venues/{{ venue.id }}/edit'><input type="button" value="Edit" class="btn btn-primary"></a>
+	<a href='/venues/{{ venue.id}}/delete'><input type="button" value="Delete" class="btn btn-warning"></a>
+</section>
 {% endblock %}
 

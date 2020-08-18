@@ -5,7 +5,7 @@
 import json
 import dateutil.parser
 import babel
-from flask import Flask, render_template, request, Response, flash, redirect, url_for, abort
+from flask import Flask, render_template, request, Response, flash, redirect, url_for, abort, jsonify
 from flask_moment import Moment
 from flask_sqlalchemy import SQLAlchemy
 import logging
@@ -82,8 +82,8 @@ class Show(db.Model):
   id = db.Column(db.Integer, primary_key=True)
   start_time = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
 
-  artist_id = db.Column(db.Integer, db.ForeignKey('Artist.id'), nullable=False)
-  venue_id = db.Column(db.Integer, db.ForeignKey('Venue.id'), nullable=False)
+  artist_id = db.Column(db.Integer, db.ForeignKey('Artist.id', ondelete="CASCADE"), nullable=False)
+  venue_id = db.Column(db.Integer, db.ForeignKey('Venue.id', ondelete="CASCADE"), nullable=False)
 
   def __repr__(self):
     return f'<Show {self.id} {self.start_time} artist_id={artist_id} venue_id={venue_id}>'
@@ -172,7 +172,7 @@ def venues():
   #     "num_upcoming_shows": 0,
   #   }]
   # }]
-  return render_template('pages/venues.html', areas=data);
+  return render_template('pages/venues.html', areas=data)
 
 @app.route('/venues/search', methods=['POST'])
 def search_venues():
@@ -395,21 +395,42 @@ def create_venue_submission():
       return render_template('pages/home.html')
     else:
       # TODO: on unsuccessful db insert, flash an error instead.
-      flash('An error occurred. Venue ' + request.form['name'] +  ' could not be listed.')
+      flash('An error occurred. Venue ' + name +  ' could not be listed.')
       # see: http://flask.pocoo.org/docs/1.0/patterns/flashing/
       print("Error in create_venue_submission()")
       # internal server error
       abort(500)
 
 
-@app.route('/venues/<venue_id>', methods=['DELETE'])
+@app.route('/venues/<int:venue_id>/delete', methods=['GET', 'POST'])
 def delete_venue(venue_id):
+
   # TODO: Complete this endpoint for taking a venue_id, and using
   # SQLAlchemy ORM to delete a record. Handle cases where the session commit could fail.
+  venue = Venue.query.get(venue_id)
+  if not venue:
+    return redirect(url_for('venues'))
+  else:
+    error_on_delete = False
+    venue_name = venue.name
+    try:
+      db.session.delete(venue)
+      db.session.commit()
+    except:
+      error_on_delete = True
+      db.session.rollback()
+    finally:
+      db.session.close()
+    if not error_on_delete:
+      flash(f'{venue_name} deleted successfully!')
+      return redirect(url_for('venues'))
+    else:
+      flash(f'An error occurred deleting venue {venue_name}.')
+      print("Error in delete_venue()")
+      abort(500)
 
   # BONUS CHALLENGE: Implement a button to delete a Venue on a Venue Page, have it so that
   # clicking that button delete it from the db then redirect the user to the homepage
-  return None
 
 #  Artists
 #  ----------------------------------------------------------------
@@ -847,7 +868,32 @@ def create_artist_submission():
       #internal server error
       abort(500)
 
+#  Delete Artist
+#  ----------------------------------------------------------------
+@app.route('/artists/<int:artist_id>/delete', methods=['GET', 'POST'])
+def delete_artist(venue_id):
 
+  artist = Artist.query.get(venue_id)
+  if not venue:
+    return redirect(url_for('artists'))
+  else:
+    error_on_delete = False
+    artist_name = artist.name
+    try:
+      db.session.delete(artist)
+      db.session.commit()
+    except:
+      error_on_delete = True
+      db.session.rollback()
+    finally:
+      db.session.close()
+    if not error_on_delete:
+      flash(f'{artist_name} deleted successfully!')
+      return redirect(url_for('artist'))
+    else:
+      flash(f'An error occurred deleting venue {artist}.')
+      print("Error in delete_artist()")
+      abort(500)
 
 #  Shows
 #  ----------------------------------------------------------------
