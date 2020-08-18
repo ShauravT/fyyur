@@ -88,17 +88,19 @@ class VenueForm(Form):
     phone = StringField(
         'phone', validators=[DataRequired()]
     )
+    def validate_phone(self, phone):
+        try:
+            input_number = pn.parse(phone.data)
+            if not (pn.is_valid_number(input_number)):
+                raise ValidationError('Invalid phone number.')
+        except:
+            input_number = pn.parse("+1"+phone.data)
+            if not (pn.is_valid_number(input_number)):
+                raise ValidationError('Invalid phone number.')
+
     image_link = StringField(
         'image_link', validators=[Optional(),URL()]
     )
-
-    def validate_phone(self, phone):
-        try:
-            p = pn.parse(phone.data)
-            if not pn.is_valid_number(p):
-                raise ValueError()
-        except (pn.phonenumberutil.NumberParseException, ValueError):
-            raise ValidationError('Invalid phone number')
 
     website= StringField(
         'website', validators=[Optional(),URL()]
@@ -206,17 +208,17 @@ class ArtistForm(Form):
         ]
     )
     phone = StringField(
-        # TODO implement validation logic for state
         'phone', validators=[DataRequired()]
     )
-
     def validate_phone(self, phone):
         try:
-            p = pn.parse(phone.data)
-            if not pn.is_valid_number(p):
-                raise ValueError()
-        except (pn.phonenumberutil.NumberParseException, ValueError):
-            raise ValidationError('Invalid phone number')
+            input_number = pn.parse(phone.data)
+            if not (pn.is_valid_number(input_number)):
+                raise ValidationError('Invalid phone number.')
+        except:
+            input_number = pn.parse("+1"+phone.data)
+            if not (pn.is_valid_number(input_number)):
+                raise ValidationError('Invalid phone number.')
 
     image_link = StringField(
         'image_link', validators=[Optional(), URL()]
