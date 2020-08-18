@@ -91,6 +91,15 @@ class VenueForm(Form):
     image_link = StringField(
         'image_link', validators=[Optional(),URL()]
     )
+
+    def validate_phone(self, phone):
+        try:
+            p = pn.parse(phone.data)
+            if not pn.is_valid_number(p):
+                raise ValueError()
+        except (pn.phonenumberutil.NumberParseException, ValueError):
+            raise ValidationError('Invalid phone number')
+
     website= StringField(
         'website', validators=[Optional(),URL()]
     )
@@ -200,6 +209,15 @@ class ArtistForm(Form):
         # TODO implement validation logic for state
         'phone', validators=[DataRequired()]
     )
+
+    def validate_phone(self, phone):
+        try:
+            p = pn.parse(phone.data)
+            if not pn.is_valid_number(p):
+                raise ValueError()
+        except (pn.phonenumberutil.NumberParseException, ValueError):
+            raise ValidationError('Invalid phone number')
+
     image_link = StringField(
         'image_link', validators=[Optional(), URL()]
     )
